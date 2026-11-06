@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>دعوت</title><style>body{font:16px Tahoma,sans-serif;text-align:center;padding:16px;background:#fff;color:#111}canvas{width:min(80vw,320px);height:auto;image-rendering:pixelated}
+.u{direction:ltr;font-size:20px;font-weight:700;margin:8px 0 28px}</style></head><body>
+<h2>دستگاه دیگر این QR را با دوربین اسکن کند</h2><p>(باید به همین وای‌فای یا هات‌اسپات وصل باشد)</p><div id="o">…</div>
+<p id="qm"></p>
+<script>
+const $=s=>document.querySelector(s);
+const T=[0,[7,1,19,0,0],[10,1,34,0,0],[15,1,55,0,0],[20,1,80,0,0],[26,1,108,0,0],[18,2,68,0,0],[20,2,78,0,0],[24,2,97,0,0],[30,2,116,0,0],[18,2,68,2,69],[20,4,81,0,0],[24,2,92,2,93],[26,4,107,0,0],[30,3,115,1,116],[22,5,87,1,88],[24,5,98,1,99],[28,1,107,5,108],[30,5,120,1,121],[28,3,113,4,114],[28,3,107,5,108]];
+const AP=[0,0,[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90]];
+function qrMatrix(text){
+  const u=new TextEncoder().encode(text),n=u.length,cap=v=>T[v][1]*T[v][2]+T[v][3]*T[v][4];let v=1;
+  while(v<=20&&4+(v<10?8:16)+8*n>cap(v)*8)v++;
+  if(v>20)return null;
+  const ec=T[v][0],b1=T[v][1],c1=T[v][2],b2=T[v][3],c2=T[v][4],dn=cap(v),bits=[];
+  const pb=(x,l)=>{for(let i=l-1;i>=0;i--)bits.push((x>>i)&1)};
+  pb(4,4);pb(n,v<10?8:16);u.forEach(b=>pb(b,8));pb(0,Math.min(4,dn*8-bits.length));while(bits.length%8)bits.push(0);
+  const cw=[];for(let i=0;i<bits.length;i+=8){let x=0;for(let j=0;j<8;j++)x=x*2+bits[i+j];cw.push(x)}
+  for(let p=0xEC;cw.length<dn;p^=0xFD)cw.push(p);
+  const ex=[],lg=[];for(let i=0,x=1;i<255;i++){ex[i]=x;lg[x]=i;x<<=1;if(x&256)x^=0x11d}
+  const mul=(a,b)=>a&&b?ex[(lg[a]+lg[b])%255]:0;
+  let g=[1];for(let i=0;i<ec;i++){const ng=Array(g.length+1).fill(0);g.forEach((c,j)=>{ng[j]^=c;ng[j+1]^=mul(c,ex[i])});g=ng}
+  const rs=d=>{const r=Array(ec).fill(0);for(const x of d){const f=x^r.shift();r.push(0);if(f)for(let i=0;i<ec;i++)r[i]^=mul(g[i+1],f)}return r};
+  const blocks=[];let o=0;for(let i=0;i<b1+b2;i++){const l=i<b1?c1:c2;blocks.push(cw.slice(o,o+l));o+=l}
+  const ecs=blocks.map(rs),out=[];
+  for(let i=0;i<Math.max(c1,c2);i++)blocks.forEach(b=>{if(i<b.length)out.push(b[i])});
+  for(let i=0;i<ec;i++)ecs.forEach(e=>out.push(e[i]));
+  const N=17+4*v,m=Array.from({length:N},()=>Array(N).fill(false)),fn=Array.from({length:N},()=>Array(N).fill(false));
+  const set=(r,c,x)=>{if(r>=0&&c>=0&&r<N&&c<N){m[r][c]=x;fn[r][c]=true}};
+  const finder=(r,c)=>{for(let i=-1;i<=7;i++)for(let j=-1;j<=7;j++){const d=Math.max(Math.abs(i-3),Math.abs(j-3));set(r+i,c+j,d<=1||d===3)}};
+  finder(0,0);finder(0,N-7);finder(N-7,0);
+  for(let i=8;i<N-8;i++){set(6,i,i%2===0);set(i,6,i%2===0)}
+  const a=AP[v]||[];a.forEach((r,i)=>a.forEach((c,j)=>{if((i===0&&(j===0||j===a.length-1))||(i===a.length-1&&j===0))return;
+    for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)set(r+y,c+x,Math.max(Math.abs(x),Math.abs(y))!==1)}));
+  set(N-8,8,true);
+  for(let i=0;i<9;i++){fn[8][i]=fn[i][8]=true}for(let i=0;i<8;i++){fn[8][N-1-i]=fn[N-1-i][8]=true}
+  if(v>=7){let r=v<<12;for(let i=17;i>=12;i--)if((r>>i)&1)r^=0x1F25<<(i-12);const vb=(v<<12)|r;
+    for(let i=0;i<18;i++){const x=((vb>>i)&1)===1,p=N-11+i%3,q=Math.floor(i/3);set(q,p,x);set(p,q,x)}}
+  let bi=0;
+  for(let c=N-1;c>=1;c-=2){if(c===6)c=5;for(let k=0;k<N;k++)for(let j=0;j<2;j++){const x=c-j,up=((c+1)&2)===0,y=up?N-1-k:k;
+    if(!fn[y][x]){m[y][x]=bi<out.length*8?((out[bi>>3]>>(7-(bi&7)))&1)===1:false;bi++}}}
+  const MK=[(r,c)=>(r+c)%2===0,(r,c)=>r%2===0,(r,c)=>c%3===0,(r,c)=>(r+c)%3===0,(r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,(r,c)=>(r*c)%2+(r*c)%3===0,(r,c)=>((r*c)%2+(r*c)%3)%2===0,(r,c)=>((r+c)%2+(r*c)%3)%2===0];
+  const pen=G=>{let p=0;
+    for(let t=0;t<2;t++)for(let i=0;i<N;i++){let run=1;for(let j=1;j<N;j++){const x=t?G[j][i]:G[i][j],y=t?G[j-1][i]:G[i][j-1];if(x===y){run++;if(run===5)p+=3;else if(run>5)p++}else run=1}}
+    let d=0;for(let i=0;i<N;i++)for(let j=0;j<N;j++){if(G[i][j])d++;if(i<N-1&&j<N-1&&G[i][j]===G[i+1][j]&&G[i][j]===G[i][j+1]&&G[i][j]===G[i+1][j+1])p+=3}
+    return p+Math.floor(Math.abs(d*20/(N*N)-10))*10};
+  const build=k=>{const G=m.map(r=>r.slice());
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!fn[r][c]&&MK[k](r,c))G[r][c]=!G[r][c];
+    const dd=(1<<3)|k;let r=dd<<10;for(let i=14;i>=10;i--)if((r>>i)&1)r^=0x537<<(i-10);
+    const f=((dd<<10)|r)^0x5412,bt=i=>((f>>i)&1)===1,S=(y,x,val)=>{G[y][x]=val};
+    for(let i=0;i<=5;i++)S(i,8,bt(i));S(7,8,bt(6));S(8,8,bt(7));S(8,7,bt(8));for(let i=9;i<15;i++)S(8,14-i,bt(i));
+    for(let i=0;i<8;i++)S(8,N-1-i,bt(i));for(let i=8;i<15;i++)S(N-15+i,8,bt(i));S(N-8,8,true);return G};
+  let best=null,bp=1e9;for(let k=0;k<8;k++){const G=build(k),p=pen(G);if(p<bp){bp=p;best=G}}
+  return best;
+}
+function drawQR(G){
+  const c=$('#qc'),x=c.getContext('2d');
+  if(!G){c.width=c.height=1;$('#qm').textContent='کد برای QR بزرگ است؛ از «اتصال با متن» استفاده کنید.';return}
+  $('#qm').textContent='';const N=G.length,s=Math.max(3,Math.floor(640/(N+8)));
+  c.width=c.height=(N+8)*s;x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#000';
+  for(let r=0;r<N;r++)for(let q=0;q<N;q++)if(G[r][q])x.fillRect((q+4)*s,(r+4)*s,s,s);
+}
+
+
+fetch('/info').then(r=>r.json()).then(j=>{const o=document.getElementById('o');o.textContent='';
+ if(!j.urls.length)o.textContent='آدرسی پیدا نشد؛ به وای‌فای وصل شوید یا هات‌اسپات را روشن کنید.';
+ j.urls.forEach(u=>{const c=document.createElement('canvas');c.id='qc';o.appendChild(c);
+  drawQR(qrMatrix(u));c.id='';const d=document.createElement('div');d.className='u';d.textContent=u;o.appendChild(d)})});
+</script></body></html>

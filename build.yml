@@ -1,10 +1,15 @@
 name: Build APK
-on: [push, workflow_dispatch]
+
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Assemble project
         run: |
           mkdir -p app/src/main/java/app/p2p/server app/src/main/assets
@@ -12,10 +17,19 @@ jobs:
           cp AndroidManifest.xml app/src/main/
           cp SignalServer.java MainActivity.java ServerService.java app/src/main/java/app/p2p/server/
           cp index.html invite.html app/src/main/assets/
+
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: '8.7' }
+        with:
+          gradle-version: '8.7'
+
       - run: gradle assembleDebug --no-daemon
+
       - uses: actions/upload-artifact@v4
-        with: { name: p2p-server-apk, path: app/build/outputs/apk/debug/app-debug.apk }
+        with:
+          name: p2p-server-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
